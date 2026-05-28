@@ -8,3 +8,4 @@ caps_lock.ahk remaps CapsLock to Escape key.
 
 colemak_dh_ansi.ahk transforms a Qwerty keyboard into a colemak-dh keyboard.
 
+google_docs_highlighting.js is intended to be loaded in google docs to add basic syntax matching for text files.
