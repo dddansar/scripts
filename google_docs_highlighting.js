@@ -117,7 +117,7 @@ function applyRunsToElement(textElement, textLength, runs) {
 
   for (const run of runs) {
     if (run.color !== null) {
-      textElement.setForegroundColor(run.start, run.end, run.color);
+      textElement.setForegroundColor(run.start, run.end, run.color); // Uses API call
     }
   }
 }
@@ -127,24 +127,24 @@ function applyRunsToElement(textElement, textLength, runs) {
 // Resets the document colors then re-highlights every paragraph in the body.
 //=============================================================================
 function highlightFullDocument() {
-  const doc   = DocumentApp.getActiveDocument();
-  const body  = doc.getBody();
+  const doc   = DocumentApp.getActiveDocument(); // Uses API call
+  const body  = doc.getBody(); // Uses API call
   const rules = createRules();
-  const childCount = body.getNumChildren();
+  const childCount = body.getNumChildren(); // Uses API call
 
-  body.setBackgroundColor(COLORS.background);
-  body.setForegroundColor(COLORS.defaultText);
-  //body.editAsText().setBold(false)
-  //body.editAsText().setUnderline(false)
-  //body.editAsText().setItalic(false)
-  //body.editAsText().setStrikethrough(false);
+  body.setBackgroundColor(COLORS.background); // Uses API call
+  body.setForegroundColor(COLORS.defaultText); // Uses API call
+  //body.editAsText().setBold(false) // Uses API call
+  //body.editAsText().setUnderline(false) // Uses API call
+  //body.editAsText().setItalic(false) // Uses API call
+  //body.editAsText().setStrikethrough(false); // Uses API call
 
-  for (let p = 0; p < childCount; p++) {
-    const block = body.getChild(p);
-    if (block.getType() !== DocumentApp.ElementType.PARAGRAPH) continue;
+  for (let i = 0; i < childCount; i++) {
+    // const block = body.getChild(i); // Uses API call
+    // if (block.getType() !== DocumentApp.ElementType.PARAGRAPH) continue; // Uses API call
 
-    const paragraph  = block.asParagraph();
-    const text       = paragraph.getText();
+    const paragraph  = body.getChild(i).asParagraph(); // Uses API call
+    const text       = paragraph.getText(); // Uses API call
     const textLength = text.length;
     if (textLength === 0) continue;
 
@@ -154,7 +154,7 @@ function highlightFullDocument() {
     // This alone eliminates most API calls for sparse documents
     if (runs.length === 0) continue;
 
-    applyRunsToElement(paragraph.editAsText(), textLength, runs);
+    applyRunsToElement(paragraph.editAsText(), textLength, runs); // Uses API call
   }
 }
 
@@ -164,43 +164,43 @@ function highlightFullDocument() {
 // Resets each paragraph's colors before reapplying, so stale colors are cleared.
 //=============================================================================
 function highlightAtCursor(count) {
-  const doc   = DocumentApp.getActiveDocument();
-  const body  = doc.getBody();
+  const doc   = DocumentApp.getActiveDocument(); // Uses API call
+  const body  = doc.getBody(); // Uses API call
   const rules = createRules();
-  const childCount = body.getNumChildren();
+  const childCount = body.getNumChildren(); // Uses API call
 
-  const cursor = doc.getCursor();
+  const cursor = doc.getCursor(); // Uses API call
   if (!cursor) {
-    DocumentApp.getUi().alert('Place your cursor in a paragraph first.');
+    DocumentApp.getUi().alert('Place your cursor in a paragraph first.'); // Uses API call
     return;
   }
 
   // Walk up to a direct block of body, then get its index
-  let element = cursor.getElement();
-  while (element.getParent().getType() !== DocumentApp.ElementType.BODY_SECTION) {
-    element = element.getParent();
+  let element = cursor.getElement(); // Uses API call
+  while (element.getParent().getType() !== DocumentApp.ElementType.BODY_SECTION) { // Uses API call
+    element = element.getParent(); // Uses API call
   }
-  const startIndex = body.getChildIndex(element);
+  const startIndex = body.getChildIndex(element); // Uses API call
 
   const endIndex = Math.min(startIndex + count, childCount);
 
   for (let i = startIndex; i < endIndex; i++) {
-    const block = body.getChild(i);
-    if (block.getType() !== DocumentApp.ElementType.PARAGRAPH) continue;
+    // const block = body.getChild(i); // Uses API call
+    // if (block.getType() !== DocumentApp.ElementType.PARAGRAPH) continue; // Uses API call
 
-    const paragraph  = block.asParagraph();
-    const text       = paragraph.getText();
+    const paragraph  = body.getChild(i).asParagraph(); // Uses API call
+    const text       = paragraph.getText(); // Uses API call
     const textLength = text.length;
 
-    paragraph.editAsText().setBackgroundColor(COLORS.background);
-    paragraph.editAsText().setForegroundColor(COLORS.defaultText);
+    // paragraph.editAsText().setBackgroundColor(COLORS.background); // Uses API call
+    // paragraph.editAsText().setForegroundColor(COLORS.defaultText); // Uses API call
 
     if (textLength === 0) continue;
 
     const runs = applyRulesToText(text, rules);
     if (runs.length === 0) continue;
 
-    applyRunsToElement(paragraph.editAsText(), textLength, runs);
+    applyRunsToElement(paragraph.editAsText(), textLength, runs); // Uses API call
   }
 }
 
@@ -219,7 +219,7 @@ function highlight100() { highlightAtCursor(100); }
 // Add menu
 //=============================================================================
 function onOpen() {
-  DocumentApp.getUi()
+  DocumentApp.getUi() // Uses API call
     .createMenu('Syntax')
     .addItem('Apply Highlighting (whole doc)', 'highlightFullDocument')
     .addSeparator()
