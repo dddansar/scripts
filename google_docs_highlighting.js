@@ -3,6 +3,10 @@
 //-----------------------------------------------------------------------------
 // Description: This script is intended to be loaded in google docs to add
 //              basic syntax matching for text files.
+//              NOTE: To add/update scripts in google docs click on:
+//                    Extensions → Apps Script → copy changes → save → run →
+//                    reload google docs page → you should see a new/updated
+//                    menu called Syntax where you can select your options.
 //-----------------------------------------------------------------------------
 // Author: Danny Sarraf
 //-----------------------------------------------------------------------------
@@ -205,6 +209,123 @@ function highlightAtCursor(count) {
 }
 
 //=============================================================================
+// Get selected paragraph index range from the current selection
+// Returns {startIndex, endIndex} of body children covered by the selection,
+// or null if there is no selection.
+//=============================================================================
+function getSelectionParagraphRange(doc, body) {
+  const selection = doc.getSelection(); // Uses API call
+  if (!selection) return null;
+
+  const rangeElements = selection.getRangeElements(); // Uses API call
+  if (!rangeElements || rangeElements.length === 0) return null;
+
+  // Walk each range element up to a direct child of body
+  let minIndex = Infinity;
+  let maxIndex = -Infinity;
+
+  for (const rangeEl of rangeElements) {
+    let element = rangeEl.getElement(); // Uses API call
+    while (element.getParent().getType() !== DocumentApp.ElementType.BODY_SECTION) { // Uses API call
+      element = element.getParent(); // Uses API call
+    }
+    const idx = body.getChildIndex(element); // Uses API call
+    if (idx < minIndex) minIndex = idx;
+    if (idx > maxIndex) maxIndex = idx;
+  }
+
+  return { startIndex: minIndex, endIndex: maxIndex + 1 };
+}
+
+//=============================================================================
+// Highlight a range of paragraphs by index [startIndex, endIndex)
+// Applies syntax highlighting rules to each paragraph in range.
+//=============================================================================
+function highlightParagraphRange(body, rules, startIndex, endIndex) {
+  const childCount = body.getNumChildren(); // Uses API call
+  const safeEnd = Math.min(endIndex, childCount);
+
+  for (let i = startIndex; i < safeEnd; i++) {
+    const paragraph  = body.getChild(i).asParagraph(); // Uses API call
+    const text       = paragraph.getText(); // Uses API call
+    const textLength = text.length;
+    if (textLength === 0) continue;
+
+    // Reset to default color before reapplying so stale colors are cleared
+    paragraph.editAsText().setForegroundColor(0, textLength - 1, COLORS.defaultText); // Uses API call
+
+    const runs = applyRulesToText(text, rules);
+    if (runs.length === 0) continue;
+
+    applyRunsToElement(paragraph.editAsText(), textLength, runs); // Uses API call
+  }
+}
+
+//=============================================================================
+// Comment selected lines
+// Prepends "// " to each selected paragraph, then re-highlights.
+//=============================================================================
+function commentSelection() {
+  const C_COMMENT_PREFIX = '// ';
+  const doc   = DocumentApp.getActiveDocument(); // Uses API call
+  const body  = doc.getBody(); // Uses API call
+  const rules = createRules();
+
+  const range = getSelectionParagraphRange(doc, body);
+  if (!range) {
+    DocumentApp.getUi().alert('Select text first.'); // Uses API call
+    return;
+  }
+
+  const childCount = body.getNumChildren(); // Uses API call
+  const safeEnd = Math.min(range.endIndex, childCount);
+
+  for (let i = range.startIndex; i < safeEnd; i++) {
+    const paragraph = body.getChild(i).asParagraph(); // Uses API call
+    const text = paragraph.getText(); // Uses API call
+    if (text.length === 0) continue;
+
+    // Only prepend if not already commented
+    if (!text.startsWith(C_COMMENT_PREFIX)) {
+      paragraph.editAsText().insertText(0, C_COMMENT_PREFIX); // Uses API call
+    }
+  }
+
+  highlightParagraphRange(body, rules, range.startIndex, range.endIndex);
+}
+
+//=============================================================================
+// Uncomment selected lines
+// Removes leading "// " from each selected paragraph, then re-highlights.
+//=============================================================================
+function uncommentSelection() {
+  const C_COMMENT_PREFIX = '// ';
+  const C_COMMENT_LEN = C_COMMENT_PREFIX.length;
+  const doc   = DocumentApp.getActiveDocument(); // Uses API call
+  const body  = doc.getBody(); // Uses API call
+  const rules = createRules();
+
+  const range = getSelectionParagraphRange(doc, body);
+  if (!range) {
+    DocumentApp.getUi().alert('Select text first.'); // Uses API call
+    return;
+  }
+
+  const childCount = body.getNumChildren(); // Uses API call
+  const safeEnd = Math.min(range.endIndex, childCount);
+
+  for (let i = range.startIndex; i < safeEnd; i++) {
+    const paragraph = body.getChild(i).asParagraph(); // Uses API call
+    const text = paragraph.getText(); // Uses API call
+    if (!text.startsWith(C_COMMENT_PREFIX)) continue;
+
+    paragraph.editAsText().deleteText(0, C_COMMENT_LEN - 1); // Uses API call
+  }
+
+  highlightParagraphRange(body, rules, range.startIndex, range.endIndex);
+}
+
+//=============================================================================
 // Individual entry points for each line-count option
 //=============================================================================
 function highlight1()   { highlightAtCursor(1);   }
@@ -229,6 +350,9 @@ function onOpen() {
     .addItem('Highlight Next 25 Paragraphs', 'highlight25')
     .addItem('Highlight Next 50 Paragraphs', 'highlight50')
     .addItem('Highlight Next 100 Paragraphs','highlight100')
+    .addSeparator()
+    .addItem('Comment Selection',   'commentSelection')
+    .addItem('Uncomment Selection', 'uncommentSelection')
     .addToUi();
 }
 
