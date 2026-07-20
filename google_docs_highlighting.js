@@ -4,7 +4,7 @@
 // Description: This script is intended to be loaded in google docs to add
 //              basic syntax matching for text files.
 //              NOTE: To add/update scripts in google docs click on:
-//                    Extensions → Apps Script → copy changes → save → run →
+//                    Extensions → Apps Script → add changes → save → run →
 //                    reload google docs page → you should see a new/updated
 //                    menu called Syntax where you can select your options.
 //-----------------------------------------------------------------------------
@@ -163,8 +163,8 @@ function highlightFullDocument() {
 }
 
 //=============================================================================
-// Highlight the next `count` paragraphs from the cursor position
-// Finds the cursor's paragraph, then highlights the next `count` paragraphs.
+// Highlight the next `count` paragraphs from the cursor or selection position
+// Falls back to the start of the selection if no cursor (i.e. text is selected).
 // Resets each paragraph's colors before reapplying, so stale colors are cleared.
 //=============================================================================
 function highlightAtCursor(count) {
@@ -173,39 +173,25 @@ function highlightAtCursor(count) {
   const rules = createRules();
   const childCount = body.getNumChildren(); // Uses API call
 
+  // getCursor() returns null when text is selected — fall back to selection start
+  let startIndex;
   const cursor = doc.getCursor(); // Uses API call
-  if (!cursor) {
-    DocumentApp.getUi().alert('Place your cursor in a paragraph first.'); // Uses API call
-    return;
+  if (cursor) {
+    let element = cursor.getElement(); // Uses API call
+    while (element.getParent().getType() !== DocumentApp.ElementType.BODY_SECTION) { // Uses API call
+      element = element.getParent(); // Uses API call
+    }
+    startIndex = body.getChildIndex(element); // Uses API call
+  } else {
+    const selRange = getSelectionParagraphRange(doc, body);
+    if (!selRange) {
+      DocumentApp.getUi().alert('Place your cursor anywhere or select valid text first.'); // Uses API call
+      return;
+    }
+    startIndex = selRange.startIndex;
   }
 
-  // Walk up to a direct block of body, then get its index
-  let element = cursor.getElement(); // Uses API call
-  while (element.getParent().getType() !== DocumentApp.ElementType.BODY_SECTION) { // Uses API call
-    element = element.getParent(); // Uses API call
-  }
-  const startIndex = body.getChildIndex(element); // Uses API call
-
-  const endIndex = Math.min(startIndex + count, childCount);
-
-  for (let i = startIndex; i < endIndex; i++) {
-    // const block = body.getChild(i); // Uses API call
-    // if (block.getType() !== DocumentApp.ElementType.PARAGRAPH) continue; // Uses API call
-
-    const paragraph  = body.getChild(i).asParagraph(); // Uses API call
-    const text       = paragraph.getText(); // Uses API call
-    const textLength = text.length;
-
-    // paragraph.editAsText().setBackgroundColor(COLORS.background); // Uses API call
-    // paragraph.editAsText().setForegroundColor(COLORS.defaultText); // Uses API call
-
-    if (textLength === 0) continue;
-
-    const runs = applyRulesToText(text, rules);
-    if (runs.length === 0) continue;
-
-    applyRunsToElement(paragraph.editAsText(), textLength, runs); // Uses API call
-  }
+  highlightParagraphRange(body, rules, startIndex, startIndex + count);
 }
 
 //=============================================================================
@@ -342,7 +328,7 @@ function highlight100() { highlightAtCursor(100); }
 function onOpen() {
   DocumentApp.getUi() // Uses API call
     .createMenu('Syntax')
-    .addItem('Apply Highlighting (whole doc)', 'highlightFullDocument')
+    .addItem('Highlight Entire Document', 'highlightFullDocument')
     .addSeparator()
     .addItem('Highlight Next  1 Paragraph',  'highlight1')
     .addItem('Highlight Next  5 Paragraphs', 'highlight5')
