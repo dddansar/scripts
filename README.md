@@ -1,11 +1,16 @@
 # Scripts
 
-Contains a few scripts that I use
+Contains a few scripts that I use...
 
-Both caps_lock.ahk and colemak_dh_ansi.ahk are autohotkey scripts that are used to map keyboard keys.
+## colemak_dh_ansi.ahk
 
-caps_lock.ahk remaps CapsLock to Escape key.
+Autohotkey script that remaps a Qwerty keyboard into a colemak-dh keyboard.
 
-colemak_dh_ansi.ahk transforms a Qwerty keyboard into a colemak-dh keyboard.
+## caps_lock.ahk
 
-google_docs_highlighting.js is intended to be loaded in google docs to add basic syntax matching for text files.
+Autohotkey script that remaps CapsLock to Escape key.
+
+## google_docs_highlighting.js
+
+Google docs script that can add basic syntax highlighting for text files.
+
